@@ -107,3 +107,20 @@ data:
 Command set: <https://developer.moonside.design>. This project bundles no Moonside
 artwork or assets; it only uses the publicly documented BLE command set and
 nominative brand references.
+
+## Disclaimer
+
+This is an **unofficial, community-built** integration. It is **not affiliated
+with, endorsed by, or supported by Moonside**. "Moonside" and any related names,
+logos, and product names are trademarks of their respective owner and are used here
+only for nominative, descriptive purposes (to identify the hardware this integration
+talks to).
+
+The integration is provided "as is", without warranty of any kind. It talks to the
+lamp over its documented BLE command set; use it at your own risk. For issues with
+this integration, use its [issue tracker](https://github.com/diotav/moonside-ha/issues)
+— not Moonside support.
+
+## License
+
+Released under the [MIT License](LICENSE). © 2026 Dion Tavenier.
