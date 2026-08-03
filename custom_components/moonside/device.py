@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import asyncio
 import logging
+from time import monotonic
 
 from bleak_retry_connector import BleakClientWithServiceCache, establish_connection
 
@@ -13,6 +14,7 @@ from homeassistant.helpers.event import async_call_later
 
 from .const import (
     IDLE_DISCONNECT_SECONDS,
+    MIN_WRITE_INTERVAL,
     UART_READ_CHAR_UUID,
     UART_WRITE_CHAR_UUID,
 )
@@ -35,6 +37,7 @@ class MoonsideDevice:
         self._client: BleakClientWithServiceCache | None = None
         self._lock = asyncio.Lock()
         self._cancel_disconnect: CALLBACK_TYPE | None = None
+        self._last_write = 0.0
 
     @property
     def address(self) -> str:
@@ -60,13 +63,24 @@ class MoonsideDevice:
         return self._client
 
     async def send(self, command: str) -> None:
-        """Connect if needed and write one ASCII command."""
+        """Connect if needed and write one ASCII command.
+
+        Opeenvolgende writes worden gespreid: de lamp schrijft zonder
+        response en zonder flow control, dus een tweede write die te snel
+        op de eerste volgt wordt door de firmware genegeerd.
+        """
         async with self._lock:
             client = await self._ensure_connected()
+
+            gap = MIN_WRITE_INTERVAL - (monotonic() - self._last_write)
+            if gap > 0:
+                await asyncio.sleep(gap)
+
             _LOGGER.debug("Halo %s <- %s", self._address, command)
             await client.write_gatt_char(
                 UART_WRITE_CHAR_UUID, command.encode("ascii"), response=False
             )
+            self._last_write = monotonic()
             self._schedule_disconnect()
 
     async def read_version(self) -> str | None:
