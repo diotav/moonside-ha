@@ -15,12 +15,13 @@ from homeassistant.components.light import (
     LightEntityFeature,
 )
 from homeassistant.config_entries import ConfigEntry
-from homeassistant.const import CONF_ADDRESS
+from homeassistant.const import CONF_ADDRESS, STATE_ON
 from homeassistant.core import HomeAssistant
 from homeassistant.exceptions import ServiceValidationError
 from homeassistant.helpers import config_validation as cv, entity_platform
 from homeassistant.helpers.device_registry import CONNECTION_BLUETOOTH, DeviceInfo
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
+from homeassistant.helpers.restore_state import RestoreEntity
 
 from .const import (
     DOMAIN,
@@ -75,7 +76,7 @@ def _brightness_to_pct(brightness: int) -> int:
     return max(10, min(100, round(brightness / 255 * 100)))
 
 
-class MoonsideLight(LightEntity):
+class MoonsideLight(LightEntity, RestoreEntity):
     """A write-only, optimistic Moonside light."""
 
     _attr_has_entity_name = True
@@ -100,6 +101,23 @@ class MoonsideLight(LightEntity):
         self._attr_brightness = 255
         self._attr_rgb_color = (255, 255, 255)
         self._attr_effect = None
+
+    async def async_added_to_hass(self) -> None:
+        """Restore the last assumed state across restarts.
+
+        The lamp keeps its own state while Home Assistant is down, so this only
+        realigns HA's optimistic view — no command is sent to the device.
+        """
+        await super().async_added_to_hass()
+        if (last := await self.async_get_last_state()) is None:
+            return
+
+        self._attr_is_on = last.state == STATE_ON
+        if (brightness := last.attributes.get(ATTR_BRIGHTNESS)) is not None:
+            self._attr_brightness = brightness
+        if (rgb := last.attributes.get(ATTR_RGB_COLOR)) is not None:
+            self._attr_rgb_color = tuple(rgb)
+        self._attr_effect = last.attributes.get(ATTR_EFFECT)
 
     async def async_turn_on(self, **kwargs: Any) -> None:
         effect = kwargs.get(ATTR_EFFECT)

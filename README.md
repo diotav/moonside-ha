@@ -98,6 +98,11 @@ data:
 
 - **Write-only.** No acknowledgement or notification is returned, so state is
   assumed, not read back. The read characteristic only returns `version|mac`.
+- **State survives restarts.** The last assumed state (on/off, brightness, colour,
+  effect) is restored when Home Assistant restarts — the lamp keeps its own state
+  while HA is down, so no command is re-sent. If you control the lamp *only* through
+  Home Assistant this stays accurate; mixing in the physical buttons or the Moonside
+  app can still make the restored view drift.
 - **Colours are raw RGB.** There is no per-lamp calibration, gamma or white-balance
   correction, so a value that looks right on a calibrated lamp (e.g. Hue) will be
   close but rarely identical here.
