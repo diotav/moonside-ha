@@ -13,6 +13,11 @@ UART_READ_CHAR_UUID = "6E400003-B5A3-F393-E0A9-E50E24DCCA9E"
 # then disconnect so the proxy connection slot is freed when idle.
 IDLE_DISCONNECT_SECONDS = 30
 
+# Minimum seconds between consecutive writes. The lamp writes without
+# response or flow control, so a second write too soon after the first is
+# dropped by the firmware; pacing them avoids that race.
+MIN_WRITE_INTERVAL = 0.12
+
 # Quick presets shown in the light card's effect list. Name -> full command.
 # These use baked-in colours; use the moonside.set_theme service to pick your own.
 EFFECTS: dict[str, str] = {
