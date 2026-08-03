@@ -1,0 +1,13 @@
+{
+  "domain": "moonside",
+  "name": "Moonside",
+  "version": "0.1.0",
+  "config_flow": true,
+  "dependencies": ["bluetooth_adapters"],
+  "bluetooth": [{ "local_name": "MOONSIDE-*" }],
+  "documentation": "https://github.com/diotav/moonside-ha",
+  "issue_tracker": "https://github.com/diotav/moonside-ha/issues",
+  "iot_class": "assumed_state",
+  "requirements": [],
+  "codeowners": ["@diotav"]
+}

@@ -1,0 +1,109 @@
+set_theme:
+  name: Thema instellen
+  description: >-
+    Start een thema/effect met zelfgekozen kleuren. Het aantal kleuren dat een
+    thema gebruikt staat vast (zie de themacatalogus); overtollige kleuren
+    worden genegeerd, te weinig geeft een foutmelding.
+  target:
+    entity:
+      domain: light
+      integration: moonside
+  fields:
+    theme:
+      name: Thema
+      description: De themacode uit de catalogus.
+      required: true
+      example: GRADIENT1
+      selector:
+        select:
+          custom_value: true
+          options:
+            - RAINBOW1
+            - RAINBOW2
+            - RAINBOW3
+            - FIRE1
+            - FIRE2
+            - THEME1
+            - THEME2
+            - THEME3
+            - THEME4
+            - THEME5
+            - COLORDROP1
+            - GRADIENT1
+            - GRADIENT2
+            - GRADIENT3
+            - TWINKLE1
+            - PULSING1
+            - PALETTE1
+            - PALETTE2
+            - BEAT1
+            - BEAT2
+            - BEAT3
+            - WAVE1
+            - LAVA1
+            - M1
+            - M2
+            - M3
+            - M4
+            - M5
+            - M6
+            - M7
+            - M8
+            - M9
+            - M10
+            - M11
+            - M12
+    color:
+      name: Kleur 1
+      description: Eerste kleur (nodig voor thema's die kleuren gebruiken).
+      selector:
+        color_rgb:
+    color2:
+      name: Kleur 2
+      description: Tweede kleur (thema's met 2+ kleuren).
+      selector:
+        color_rgb:
+    color3:
+      name: Kleur 3
+      description: Derde kleur (thema's met 3+ kleuren).
+      selector:
+        color_rgb:
+    color4:
+      name: Kleur 4
+      description: Vierde kleur (alleen FIRE2, THEME3, PALETTE2).
+      selector:
+        color_rgb:
+    color5:
+      name: Kleur 5
+      description: Vijfde kleur (alleen THEME3, PALETTE2).
+      selector:
+        color_rgb:
+    color6:
+      name: Kleur 6
+      description: Zesde kleur (alleen THEME3, PALETTE2).
+      selector:
+        color_rgb:
+    speed:
+      name: Snelheid
+      description: Alleen voor RAINBOW1/RAINBOW2 (animatiesnelheid i.p.v. kleur).
+      selector:
+        number:
+          min: 0
+          max: 255
+          mode: box
+
+send_command:
+  name: Ruw commando sturen
+  description: Stuurt een letterlijk ASCII-commando naar de lamp (Nordic UART).
+  target:
+    entity:
+      domain: light
+      integration: moonside
+  fields:
+    command:
+      name: Commando
+      description: Het exacte commando, bijv. COLOR255000000 of THEME.RAINBOW1.20,
+      required: true
+      example: "THEME.GRADIENT1.255,0,0,128,0,255,"
+      selector:
+        text:

@@ -1,0 +1,18 @@
+{
+  "config": {
+    "flow_title": "{name}",
+    "step": {
+      "user": {
+        "description": "Select your Moonside lamp.",
+        "data": { "address": "Device" }
+      },
+      "confirm": {
+        "description": "Do you want to set up {name}?"
+      }
+    },
+    "abort": {
+      "no_devices_found": "No Moonside lamps found in range of a Bluetooth proxy.",
+      "already_configured": "This device is already configured."
+    }
+  }
+}

@@ -1,0 +1,18 @@
+{
+  "config": {
+    "flow_title": "{name}",
+    "step": {
+      "user": {
+        "description": "Kies je Moonside-lamp.",
+        "data": { "address": "Apparaat" }
+      },
+      "confirm": {
+        "description": "Wil je {name} toevoegen?"
+      }
+    },
+    "abort": {
+      "no_devices_found": "Geen Moonside-lampen binnen bereik van een bluetooth proxy gevonden.",
+      "already_configured": "Dit apparaat is al ingesteld."
+    }
+  }
+}
