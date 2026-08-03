@@ -34,6 +34,11 @@ colour clears the active effect and vice versa.
 
 ### HACS (custom repository)
 
+[![Open your Home Assistant instance and open a repository inside the Home Assistant Community Store.](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=diotav&repository=moonside-ha&category=integration)
+
+Click the button above to add this repository to HACS directly, then install
+**Moonside** and restart Home Assistant. Or do it manually:
+
 1. HACS → three-dot menu → **Custom repositories**.
 2. Add this repository's URL with category **Integration**.
 3. Install **Moonside** and restart Home Assistant.
