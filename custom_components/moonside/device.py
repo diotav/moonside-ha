@@ -65,12 +65,10 @@ class MoonsideDevice:
     async def send(self, command: str) -> None:
         """Connect if needed and write one ASCII command.
 
-        Writes gaan met ATT-response: write_gatt_char keert dan pas terug
-        zodra de BLE-stack de write bevestigt, niet zodra het pakket lokaal
-        in de queue staat. Dat serialiseert opeenvolgende writes betrouwbaar
-        -- ook door een Bluetooth-proxy heen -- en voorkomt dat een tweede
-        write de eerste inhaalt of ermee versmelt (afgekapte commando's).
-        MIN_WRITE_INTERVAL blijft als kleine vangnet-buffer staan.
+        The docs (developer.moonside.design) note that the device sends no
+        acknowledgement on writes and that "rapid writes can interrupt
+        animation transitions", so we write without a response and space
+        consecutive writes out with MIN_WRITE_INTERVAL.
         """
         async with self._lock:
             client = await self._ensure_connected()
@@ -81,7 +79,7 @@ class MoonsideDevice:
 
             _LOGGER.debug("Halo %s <- %s", self._address, command)
             await client.write_gatt_char(
-                UART_WRITE_CHAR_UUID, command.encode("ascii"), response=True
+                UART_WRITE_CHAR_UUID, command.encode("ascii"), response=False
             )
             self._last_write = monotonic()
             self._schedule_disconnect()

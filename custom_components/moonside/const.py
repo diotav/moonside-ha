@@ -13,17 +13,9 @@ UART_READ_CHAR_UUID = "6E400003-B5A3-F393-E0A9-E50E24DCCA9E"
 # then disconnect so the proxy connection slot is freed when idle.
 IDLE_DISCONNECT_SECONDS = 30
 
-# Minimum seconds between consecutive writes, kept as a small safety buffer.
-# The real serialisation comes from writing with an ATT response (see
-# MoonsideDevice.send); this only guards against the firmware needing a brief
-# pause to settle an animation transition between commands.
+# Minimum seconds between consecutive writes. The docs note that "rapid writes
+# can interrupt animation transitions", so consecutive commands are spaced out.
 MIN_WRITE_INTERVAL = 0.12
-
-# Seconds to wait after the first COLOR write that replaces a running theme
-# before re-sending it. A static colour applied over a live animation lands on
-# the wrong hue (e.g. orange -> yellow); the animation needs a moment to stop
-# before the colour sticks. Only used when switching away from an effect.
-COLOR_SETTLE = 0.4
 
 # Quick presets shown in the light card's effect list. Name -> full command.
 # These use baked-in colours; use the moonside.set_theme service to pick your own.
