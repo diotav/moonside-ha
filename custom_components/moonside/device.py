@@ -65,9 +65,12 @@ class MoonsideDevice:
     async def send(self, command: str) -> None:
         """Connect if needed and write one ASCII command.
 
-        Opeenvolgende writes worden gespreid: de lamp schrijft zonder
-        response en zonder flow control, dus een tweede write die te snel
-        op de eerste volgt wordt door de firmware genegeerd.
+        Writes gaan met ATT-response: write_gatt_char keert dan pas terug
+        zodra de BLE-stack de write bevestigt, niet zodra het pakket lokaal
+        in de queue staat. Dat serialiseert opeenvolgende writes betrouwbaar
+        -- ook door een Bluetooth-proxy heen -- en voorkomt dat een tweede
+        write de eerste inhaalt of ermee versmelt (afgekapte commando's).
+        MIN_WRITE_INTERVAL blijft als kleine vangnet-buffer staan.
         """
         async with self._lock:
             client = await self._ensure_connected()
@@ -78,7 +81,7 @@ class MoonsideDevice:
 
             _LOGGER.debug("Halo %s <- %s", self._address, command)
             await client.write_gatt_char(
-                UART_WRITE_CHAR_UUID, command.encode("ascii"), response=False
+                UART_WRITE_CHAR_UUID, command.encode("ascii"), response=True
             )
             self._last_write = monotonic()
             self._schedule_disconnect()
