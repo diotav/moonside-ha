@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import asyncio
 from typing import Any
 
 import voluptuous as vol
@@ -25,7 +24,6 @@ from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.restore_state import RestoreEntity
 
 from .const import (
-    COLOR_SETTLE,
     DOMAIN,
     EFFECTS,
     THEME_COLORS,
@@ -125,44 +123,21 @@ class MoonsideLight(LightEntity, RestoreEntity):
         effect = kwargs.get(ATTR_EFFECT)
         rgb = kwargs.get(ATTR_RGB_COLOR)
         brightness = kwargs.get(ATTR_BRIGHTNESS)
-        was_on = self._attr_is_on
 
-        setting_effect = effect is not None and effect in EFFECTS
-        setting_color = not setting_effect and rgb is not None
-        rgb = tuple(rgb) if rgb is not None else None
-
-        # Turn the lamp on explicitly only when nothing below will do so
-        # implicitly (a COLOR or theme write already powers it on).
-        if not was_on and not setting_effect and not setting_color:
+        if effect is not None and effect in EFFECTS:
+            await self._device.send(EFFECTS[effect])
+            self._attr_effect = effect
+        elif rgb is not None:
+            r, g, b = rgb
+            await self._device.send(f"COLOR{r:03d}{g:03d}{b:03d}")
+            self._attr_rgb_color = tuple(rgb)
+            self._attr_effect = None
+        elif not self._attr_is_on:
             await self._device.send("LEDON")
 
-        # Brightness goes out before colour so the colour fade is always the
-        # last write. A BRIGH landing mid-transition makes the firmware abort
-        # the fade at the wrong hue (e.g. orange -> yellow). Re-sending a value
-        # the lamp already holds would restart that fade for nothing, so skip
-        # writes that match the current assumed state.
         if brightness is not None:
-            if not was_on or brightness != self._attr_brightness:
-                await self._device.send(f"BRIGH{_brightness_to_pct(brightness)}")
+            await self._device.send(f"BRIGH{_brightness_to_pct(brightness)}")
             self._attr_brightness = brightness
-
-        if setting_effect:
-            if not was_on or effect != self._attr_effect:
-                await self._device.send(EFFECTS[effect])
-            self._attr_effect = effect
-        elif setting_color:
-            if not was_on or rgb != self._attr_rgb_color:
-                r, g, b = rgb
-                command = f"COLOR{r:03d}{g:03d}{b:03d}"
-                await self._device.send(command)
-                # Switching from a running theme to a static colour: the first
-                # write interrupts the animation mid-frame (lands on the wrong
-                # hue), so re-send once it has settled to make the colour stick.
-                if self._attr_effect is not None:
-                    await asyncio.sleep(COLOR_SETTLE)
-                    await self._device.send(command)
-            self._attr_rgb_color = rgb
-            self._attr_effect = None
 
         self._attr_is_on = True
         self.async_write_ha_state()
