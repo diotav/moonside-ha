@@ -123,21 +123,37 @@ class MoonsideLight(LightEntity, RestoreEntity):
         effect = kwargs.get(ATTR_EFFECT)
         rgb = kwargs.get(ATTR_RGB_COLOR)
         brightness = kwargs.get(ATTR_BRIGHTNESS)
+        was_on = self._attr_is_on
 
-        if effect is not None and effect in EFFECTS:
-            await self._device.send(EFFECTS[effect])
-            self._attr_effect = effect
-        elif rgb is not None:
-            r, g, b = rgb
-            await self._device.send(f"COLOR{r:03d}{g:03d}{b:03d}")
-            self._attr_rgb_color = rgb
-            self._attr_effect = None
-        elif not self._attr_is_on:
+        setting_effect = effect is not None and effect in EFFECTS
+        setting_color = not setting_effect and rgb is not None
+        rgb = tuple(rgb) if rgb is not None else None
+
+        # Turn the lamp on explicitly only when nothing below will do so
+        # implicitly (a COLOR or theme write already powers it on).
+        if not was_on and not setting_effect and not setting_color:
             await self._device.send("LEDON")
 
+        # Brightness goes out before colour so the colour fade is always the
+        # last write. A BRIGH landing mid-transition makes the firmware abort
+        # the fade at the wrong hue (e.g. orange -> yellow). Re-sending a value
+        # the lamp already holds would restart that fade for nothing, so skip
+        # writes that match the current assumed state.
         if brightness is not None:
-            await self._device.send(f"BRIGH{_brightness_to_pct(brightness)}")
+            if not was_on or brightness != self._attr_brightness:
+                await self._device.send(f"BRIGH{_brightness_to_pct(brightness)}")
             self._attr_brightness = brightness
+
+        if setting_effect:
+            if not was_on or effect != self._attr_effect:
+                await self._device.send(EFFECTS[effect])
+            self._attr_effect = effect
+        elif setting_color:
+            if not was_on or rgb != self._attr_rgb_color:
+                r, g, b = rgb
+                await self._device.send(f"COLOR{r:03d}{g:03d}{b:03d}")
+            self._attr_rgb_color = rgb
+            self._attr_effect = None
 
         self._attr_is_on = True
         self.async_write_ha_state()
