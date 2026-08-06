@@ -19,6 +19,12 @@ IDLE_DISCONNECT_SECONDS = 30
 # pause to settle an animation transition between commands.
 MIN_WRITE_INTERVAL = 0.12
 
+# Seconds to wait after the first COLOR write that replaces a running theme
+# before re-sending it. A static colour applied over a live animation lands on
+# the wrong hue (e.g. orange -> yellow); the animation needs a moment to stop
+# before the colour sticks. Only used when switching away from an effect.
+COLOR_SETTLE = 0.4
+
 # Quick presets shown in the light card's effect list. Name -> full command.
 # These use baked-in colours; use the moonside.set_theme service to pick your own.
 EFFECTS: dict[str, str] = {

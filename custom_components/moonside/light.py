@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import asyncio
 from typing import Any
 
 import voluptuous as vol
@@ -24,6 +25,7 @@ from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.restore_state import RestoreEntity
 
 from .const import (
+    COLOR_SETTLE,
     DOMAIN,
     EFFECTS,
     THEME_COLORS,
@@ -151,7 +153,14 @@ class MoonsideLight(LightEntity, RestoreEntity):
         elif setting_color:
             if not was_on or rgb != self._attr_rgb_color:
                 r, g, b = rgb
-                await self._device.send(f"COLOR{r:03d}{g:03d}{b:03d}")
+                command = f"COLOR{r:03d}{g:03d}{b:03d}"
+                await self._device.send(command)
+                # Switching from a running theme to a static colour: the first
+                # write interrupts the animation mid-frame (lands on the wrong
+                # hue), so re-send once it has settled to make the colour stick.
+                if self._attr_effect is not None:
+                    await asyncio.sleep(COLOR_SETTLE)
+                    await self._device.send(command)
             self._attr_rgb_color = rgb
             self._attr_effect = None
 
