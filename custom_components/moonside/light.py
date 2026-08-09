@@ -182,12 +182,24 @@ class MoonsideLight(LightEntity, RestoreEntity):
         self._attr_available = False
         self.async_write_ha_state()
 
+    async def _reset_before_theme(self) -> None:
+        """Power off before applying a theme when a static colour is showing.
+
+        A theme applied over a static colour is tinted by that colour, but
+        applying it from an off lamp is clean (confirmed on-device). Only reset
+        when the lamp is on and no dropdown effect is active (i.e. it is showing
+        a plain colour), so effect-to-effect switches keep running.
+        """
+        if self._attr_is_on and self._attr_effect is None:
+            await self._device.send("LEDOFF")
+
     async def async_turn_on(self, **kwargs: Any) -> None:
         effect = kwargs.get(ATTR_EFFECT)
         rgb = kwargs.get(ATTR_RGB_COLOR)
         brightness = kwargs.get(ATTR_BRIGHTNESS)
 
         if effect is not None and effect in EFFECTS:
+            await self._reset_before_theme()
             await self._device.send(EFFECTS[effect])
             self._attr_effect = effect
         elif rgb is not None:
@@ -255,6 +267,7 @@ class MoonsideLight(LightEntity, RestoreEntity):
                 f"{err.given} opgegeven."
             ) from err
 
+        await self._reset_before_theme()
         await self._device.send(command)
         self._attr_effect = None
         self._attr_is_on = True
