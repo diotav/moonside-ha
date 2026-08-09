@@ -8,6 +8,7 @@ from homeassistant.components.sensor import SensorEntity
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import CONF_ADDRESS, EntityCategory
 from homeassistant.core import HomeAssistant
+from homeassistant.helpers import device_registry as dr
 from homeassistant.helpers.device_registry import CONNECTION_BLUETOOTH, DeviceInfo
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
@@ -38,10 +39,10 @@ class MoonsideFirmwareSensor(SensorEntity):
 
     def __init__(self, device: MoonsideDevice, entry: ConfigEntry) -> None:
         self._device = device
-        base_id = entry.unique_id or entry.data[CONF_ADDRESS]
-        self._attr_unique_id = f"{base_id}_firmware"
+        self._base_id = entry.unique_id or entry.data[CONF_ADDRESS]
+        self._attr_unique_id = f"{self._base_id}_firmware"
         self._attr_device_info = DeviceInfo(
-            identifiers={(DOMAIN, base_id)},
+            identifiers={(DOMAIN, self._base_id)},
             connections={(CONNECTION_BLUETOOTH, device.address)},
             manufacturer="Moonside",
             name=entry.title,
@@ -58,6 +59,14 @@ class MoonsideFirmwareSensor(SensorEntity):
         except Exception:  # noqa: BLE001 - lamp may be out of range
             _LOGGER.debug("Kon firmwareversie niet lezen", exc_info=True)
             return
-        if raw:
-            self._attr_native_value = raw.split("|", 1)[0]
-            self.async_write_ha_state()
+        if not raw:
+            return
+
+        version = raw.split("|", 1)[0]
+        self._attr_native_value = version
+        self.async_write_ha_state()
+
+        # Also surface it on the device page as the firmware version.
+        dev_reg = dr.async_get(self.hass)
+        if device := dev_reg.async_get_device(identifiers={(DOMAIN, self._base_id)}):
+            dev_reg.async_update_device(device.id, sw_version=version)
