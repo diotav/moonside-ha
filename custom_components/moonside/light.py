@@ -183,14 +183,14 @@ class MoonsideLight(LightEntity, RestoreEntity):
         self.async_write_ha_state()
 
     async def _reset_before_theme(self) -> None:
-        """Power off before applying a theme when a static colour is showing.
+        """Power off before applying a theme so the previous state doesn't bleed.
 
-        A theme applied over a static colour is tinted by that colour, but
-        applying it from an off lamp is clean (confirmed on-device). Only reset
-        when the lamp is on and no dropdown effect is active (i.e. it is showing
-        a plain colour), so effect-to-effect switches keep running.
+        A theme applied while the lamp is on is tinted or blended by whatever it
+        is showing -- a static colour or another running theme -- while applying
+        it from an off lamp is clean (confirmed on-device). So briefly power off
+        first whenever the lamp is already on.
         """
-        if self._attr_is_on and self._attr_effect is None:
+        if self._attr_is_on:
             await self._device.send("LEDOFF")
 
     async def async_turn_on(self, **kwargs: Any) -> None:
