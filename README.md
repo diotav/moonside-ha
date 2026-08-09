@@ -16,8 +16,12 @@ app, Home Assistant's view can drift.
 - A quick **effect list** on the light card with baked-in colours (see `const.py`).
 - Service **`moonside.set_theme`** — run any theme with your own colours. The number
   of colours each theme uses is validated against the catalog.
+- Service **`moonside.set_pixel`** — set a single addressable LED (0–171).
+- Service **`moonside.set_backled`** — set one of the two back-light sections.
 - Service **`moonside.send_command`** — send any raw ASCII command to the lamp.
-- A diagnostic **firmware version** sensor, read once from the lamp on connect.
+- A diagnostic **firmware version** sensor (read once on connect), also shown as the
+  device's firmware version on its device page.
+- The light reports **unavailable** when no Bluetooth proxy can see the lamp.
 
 Colour and effect are mutually exclusive, just like on the device itself: choosing a
 colour clears the active effect and vice versa.
@@ -81,10 +85,35 @@ Colours per theme:
 
 Extra colours are ignored; too few returns an error.
 
+### `moonside.set_pixel`
+
+Set a single addressable LED. The strip has 172 LEDs, numbered `0`–`171`.
+
+```yaml
+action: moonside.set_pixel
+target:
+  entity_id: light.moonside_o101
+data:
+  index: 42
+  color: [255, 0, 128]
+```
+
+### `moonside.set_backled`
+
+Set one of the two back-light sections (`1` or `2`).
+
+```yaml
+action: moonside.set_backled
+target:
+  entity_id: light.moonside_o101
+data:
+  section: 1
+  color: [50, 50, 50]
+```
+
 ### `moonside.send_command`
 
-Send a raw ASCII command, for anything outside the structured service (or to
-experiment with model-specific commands such as `PIXEL` / `BACKLED`).
+Send a raw ASCII command, for anything outside the structured services.
 
 ```yaml
 action: moonside.send_command
@@ -109,8 +138,12 @@ data:
 - **Connection handling.** The BLE connection is opened on demand, reused, and
   dropped after 30 s idle so a shared proxy slot is freed. The first action after an
   idle period reconnects first, which can feel briefly unresponsive.
-- **Not implemented.** `PIXEL` (per-LED array) and `BACKLED` (back sections) are
-  documented as model-specific; use `send_command` to experiment.
+- **Availability.** The entity follows Bluetooth presence: it goes `unavailable`
+  when no proxy has seen the lamp's advertisements for a while (for example when the
+  lamp is powered off or out of range), and returns as soon as it is seen again.
+- **Model-specific commands.** `PIXEL` and `BACKLED` are exposed via `set_pixel` and
+  `set_backled`, but only exist on models with an addressable strip / back LEDs; on
+  other models they are simply ignored.
 
 ## Protocol
 

@@ -14,5 +14,83 @@
       "no_devices_found": "Geen Moonside-lampen binnen bereik van een bluetooth proxy gevonden.",
       "already_configured": "Dit apparaat is al ingesteld."
     }
+  },
+  "services": {
+    "set_theme": {
+      "name": "Thema instellen",
+      "description": "Start een thema/effect met zelfgekozen kleuren. Het aantal kleuren dat een thema gebruikt staat vast (zie de catalogus); overtollige kleuren worden genegeerd, te weinig geeft een foutmelding.",
+      "fields": {
+        "theme": {
+          "name": "Thema",
+          "description": "De themacode uit de catalogus."
+        },
+        "color": {
+          "name": "Kleur 1",
+          "description": "Eerste kleur (nodig voor thema's die kleuren gebruiken)."
+        },
+        "color2": {
+          "name": "Kleur 2",
+          "description": "Tweede kleur (thema's met 2 of meer kleuren)."
+        },
+        "color3": {
+          "name": "Kleur 3",
+          "description": "Derde kleur (thema's met 3 of meer kleuren)."
+        },
+        "color4": {
+          "name": "Kleur 4",
+          "description": "Vierde kleur (alleen FIRE2, THEME3, PALETTE2)."
+        },
+        "color5": {
+          "name": "Kleur 5",
+          "description": "Vijfde kleur (alleen THEME3, PALETTE2)."
+        },
+        "color6": {
+          "name": "Kleur 6",
+          "description": "Zesde kleur (alleen THEME3, PALETTE2)."
+        },
+        "speed": {
+          "name": "Snelheid",
+          "description": "Alleen voor RAINBOW1/RAINBOW2 (animatiesnelheid i.p.v. een kleur)."
+        }
+      }
+    },
+    "set_pixel": {
+      "name": "Losse LED instellen",
+      "description": "Zet één adresseerbare LED op een kleur (PIXEL-commando). De strip heeft 172 LEDs, genummerd 0 t/m 171.",
+      "fields": {
+        "index": {
+          "name": "LED-index",
+          "description": "Welke LED (0 t/m 171)."
+        },
+        "color": {
+          "name": "Kleur",
+          "description": "De kleur voor deze LED."
+        }
+      }
+    },
+    "set_backled": {
+      "name": "Achtergrondsectie instellen",
+      "description": "Zet een van de twee achtergrondsecties op een kleur (BACKLED-commando).",
+      "fields": {
+        "section": {
+          "name": "Sectie",
+          "description": "Welke achtergrondsectie (1 of 2)."
+        },
+        "color": {
+          "name": "Kleur",
+          "description": "De kleur voor deze sectie."
+        }
+      }
+    },
+    "send_command": {
+      "name": "Ruw commando sturen",
+      "description": "Stuurt een letterlijk ASCII-commando naar de lamp (Nordic UART).",
+      "fields": {
+        "command": {
+          "name": "Commando",
+          "description": "Het exacte commando, bijv. COLOR255000000 of THEME.RAINBOW1.20,"
+        }
+      }
+    }
   }
 }

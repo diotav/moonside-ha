@@ -6,6 +6,13 @@ from typing import Any
 
 import voluptuous as vol
 
+from homeassistant.components import bluetooth
+from homeassistant.components.bluetooth import (
+    BluetoothCallbackMatcher,
+    BluetoothChange,
+    BluetoothScanningMode,
+    BluetoothServiceInfoBleak,
+)
 from homeassistant.components.light import (
     ATTR_BRIGHTNESS,
     ATTR_EFFECT,
@@ -16,21 +23,23 @@ from homeassistant.components.light import (
 )
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import CONF_ADDRESS, STATE_ON
-from homeassistant.core import HomeAssistant
+from homeassistant.core import HomeAssistant, callback
 from homeassistant.exceptions import ServiceValidationError
 from homeassistant.helpers import config_validation as cv, entity_platform
 from homeassistant.helpers.device_registry import CONNECTION_BLUETOOTH, DeviceInfo
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.restore_state import RestoreEntity
 
-from .const import (
-    DOMAIN,
-    EFFECTS,
-    THEME_COLORS,
-    THEME_DEFAULT_SPEED,
-    THEME_NO_COLOR_PARAM,
-    THEME_SPEED_ONLY,
+from .commands import (
+    NotEnoughColorsError,
+    UnknownThemeError,
+    backled_command,
+    brightness_to_pct,
+    color_command,
+    pixel_command,
+    theme_command,
 )
+from .const import BACKLED_SECTIONS, DOMAIN, EFFECTS, PIXEL_MAX_INDEX
 from .device import MoonsideDevice
 
 RGB = vol.All(
@@ -69,11 +78,24 @@ async def async_setup_entry(
         },
         "async_set_theme",
     )
-
-
-def _brightness_to_pct(brightness: int) -> int:
-    """Map HA brightness (0-255) to the device's 10-100 range."""
-    return max(10, min(100, round(brightness / 255 * 100)))
+    platform.async_register_entity_service(
+        "set_pixel",
+        {
+            vol.Required("index"): vol.All(
+                vol.Coerce(int), vol.Range(min=0, max=PIXEL_MAX_INDEX)
+            ),
+            vol.Required("color"): RGB,
+        },
+        "async_set_pixel",
+    )
+    platform.async_register_entity_service(
+        "set_backled",
+        {
+            vol.Required("section"): vol.All(vol.Coerce(int), vol.In(BACKLED_SECTIONS)),
+            vol.Required("color"): RGB,
+        },
+        "async_set_backled",
+    )
 
 
 class MoonsideLight(LightEntity, RestoreEntity):
@@ -103,21 +125,62 @@ class MoonsideLight(LightEntity, RestoreEntity):
         self._attr_effect = None
 
     async def async_added_to_hass(self) -> None:
-        """Restore the last assumed state across restarts.
+        """Restore the last assumed state and track Bluetooth presence.
 
-        The lamp keeps its own state while Home Assistant is down, so this only
-        realigns HA's optimistic view — no command is sent to the device.
+        The lamp keeps its own state while Home Assistant is down, so restoring
+        only realigns HA's optimistic view — no command is sent to the device.
         """
         await super().async_added_to_hass()
-        if (last := await self.async_get_last_state()) is None:
-            return
+        self._async_setup_availability()
 
-        self._attr_is_on = last.state == STATE_ON
-        if (brightness := last.attributes.get(ATTR_BRIGHTNESS)) is not None:
-            self._attr_brightness = brightness
-        if (rgb := last.attributes.get(ATTR_RGB_COLOR)) is not None:
-            self._attr_rgb_color = tuple(rgb)
-        self._attr_effect = last.attributes.get(ATTR_EFFECT)
+        if (last := await self.async_get_last_state()) is not None:
+            self._attr_is_on = last.state == STATE_ON
+            if (brightness := last.attributes.get(ATTR_BRIGHTNESS)) is not None:
+                self._attr_brightness = brightness
+            if (rgb := last.attributes.get(ATTR_RGB_COLOR)) is not None:
+                self._attr_rgb_color = tuple(rgb)
+            self._attr_effect = last.attributes.get(ATTR_EFFECT)
+
+    @callback
+    def _async_setup_availability(self) -> None:
+        """Mark the entity available while a proxy can see the lamp.
+
+        The lamp gives no feedback, so availability follows Bluetooth presence:
+        an advertisement marks it available, and the unavailability tracker
+        (fired when no proxy has seen it for a while) marks it unavailable.
+        """
+        address = self._device.address
+        self._attr_available = bluetooth.async_address_present(
+            self.hass, address, connectable=True
+        )
+        self.async_on_remove(
+            bluetooth.async_register_callback(
+                self.hass,
+                self._async_bluetooth_seen,
+                BluetoothCallbackMatcher(address=address, connectable=True),
+                BluetoothScanningMode.ACTIVE,
+            )
+        )
+        self.async_on_remove(
+            bluetooth.async_track_unavailable(
+                self.hass, self._async_bluetooth_unavailable, address, connectable=True
+            )
+        )
+
+    @callback
+    def _async_bluetooth_seen(
+        self, service_info: BluetoothServiceInfoBleak, change: BluetoothChange
+    ) -> None:
+        if not self._attr_available:
+            self._attr_available = True
+            self.async_write_ha_state()
+
+    @callback
+    def _async_bluetooth_unavailable(
+        self, service_info: BluetoothServiceInfoBleak
+    ) -> None:
+        self._attr_available = False
+        self.async_write_ha_state()
 
     async def async_turn_on(self, **kwargs: Any) -> None:
         effect = kwargs.get(ATTR_EFFECT)
@@ -128,15 +191,14 @@ class MoonsideLight(LightEntity, RestoreEntity):
             await self._device.send(EFFECTS[effect])
             self._attr_effect = effect
         elif rgb is not None:
-            r, g, b = rgb
-            await self._device.send(f"COLOR{r:03d}{g:03d}{b:03d}")
+            await self._device.send(color_command(rgb))
             self._attr_rgb_color = tuple(rgb)
             self._attr_effect = None
         elif not self._attr_is_on:
             await self._device.send("LEDON")
 
         if brightness is not None:
-            await self._device.send(f"BRIGH{_brightness_to_pct(brightness)}")
+            await self._device.send(f"BRIGH{brightness_to_pct(brightness)}")
             self._attr_brightness = brightness
 
         self._attr_is_on = True
@@ -155,6 +217,18 @@ class MoonsideLight(LightEntity, RestoreEntity):
         self._attr_is_on = True
         self.async_write_ha_state()
 
+    async def async_set_pixel(self, index: int, color: list[int]) -> None:
+        """Set one addressable LED (PIXEL command)."""
+        await self._device.send(pixel_command(index, color))
+        self._attr_is_on = True
+        self.async_write_ha_state()
+
+    async def async_set_backled(self, section: int, color: list[int]) -> None:
+        """Set a back-light section (BACKLED command)."""
+        await self._device.send(backled_command(section, color))
+        self._attr_is_on = True
+        self.async_write_ha_state()
+
     async def async_set_theme(
         self,
         theme: str,
@@ -167,34 +241,21 @@ class MoonsideLight(LightEntity, RestoreEntity):
         speed: int | None = None,
     ) -> None:
         """Run a theme with user-chosen colours, validated against the catalog."""
-        code = theme.strip().upper()
-        needed = THEME_COLORS.get(code)
-        if needed is None:
+        try:
+            command = theme_command(
+                theme, [color, color2, color3, color4, color5, color6], speed
+            )
+        except UnknownThemeError as err:
             raise ServiceValidationError(
                 f"Onbekend thema '{theme}'. Zie de themacatalogus in const.py."
-            )
+            ) from err
+        except NotEnoughColorsError as err:
+            raise ServiceValidationError(
+                f"Thema {err.code} vereist {err.needed} kleuren; "
+                f"{err.given} opgegeven."
+            ) from err
 
-        if code in THEME_SPEED_ONLY:
-            payload = str(speed if speed is not None else THEME_DEFAULT_SPEED)
-        elif needed == 0:
-            payload = THEME_NO_COLOR_PARAM
-        else:
-            given = [
-                c
-                for c in (color, color2, color3, color4, color5, color6)
-                if c is not None
-            ]
-            if len(given) < needed:
-                raise ServiceValidationError(
-                    f"Thema {code} vereist {needed} kleuren; "
-                    f"{len(given)} opgegeven."
-                )
-            params: list[int] = []
-            for c in given[:needed]:
-                params += list(c)
-            payload = ",".join(str(v) for v in params)
-
-        await self._device.send(f"THEME.{code}.{payload},")
+        await self._device.send(command)
         self._attr_effect = None
         self._attr_is_on = True
         self.async_write_ha_state()
