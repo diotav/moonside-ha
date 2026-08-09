@@ -1,3 +1,0 @@
-# Test dependencies. pytest-homeassistant-custom-component pulls in a matching
-# Home Assistant and pytest stack for testing custom integrations.
-pytest-homeassistant-custom-component

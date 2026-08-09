@@ -1,7 +1,7 @@
 """Pure builders for the Moonside BLE command strings.
 
-Kept free of Home Assistant imports so the protocol logic can be unit-tested in
-isolation. See the command set at developer.moonside.design.
+Kept free of Home Assistant imports so the protocol logic stays isolated from
+the entity layer. See the command set at developer.moonside.design.
 """
 
 from __future__ import annotations

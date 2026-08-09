@@ -151,18 +151,6 @@ Command set: <https://developer.moonside.design>. This project bundles no Moonsi
 artwork or assets; it only uses the publicly documented BLE command set and
 nominative brand references.
 
-## Development
-
-The protocol string builders live in `commands.py`, kept free of Home Assistant
-imports so they can be unit-tested in isolation. Run the tests with:
-
-```bash
-pip install -r requirements_test.txt
-pytest
-```
-
-CI runs the same suite on every push and pull request.
-
 ## Disclaimer
 
 This is an **unofficial, community-built** integration. It is **not affiliated
