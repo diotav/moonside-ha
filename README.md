@@ -24,7 +24,9 @@ app, Home Assistant's view can drift.
 - The light reports **unavailable** when no Bluetooth proxy can see the lamp.
 
 Colour and effect are mutually exclusive, just like on the device itself: choosing a
-colour clears the active effect and vice versa.
+colour clears the active effect, and switching from a colour to an effect briefly
+powers the lamp off first, otherwise the previous colour tints the effect on the
+device.
 
 ## Requirements
 
