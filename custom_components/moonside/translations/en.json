@@ -14,5 +14,83 @@
       "no_devices_found": "No Moonside lamps found in range of a Bluetooth proxy.",
       "already_configured": "This device is already configured."
     }
+  },
+  "services": {
+    "set_theme": {
+      "name": "Set theme",
+      "description": "Run a theme/effect with your own colours. The number of colours each theme uses is fixed (see the catalog); extra colours are ignored, too few raises an error.",
+      "fields": {
+        "theme": {
+          "name": "Theme",
+          "description": "The theme code from the catalog."
+        },
+        "color": {
+          "name": "Colour 1",
+          "description": "First colour (for themes that use colours)."
+        },
+        "color2": {
+          "name": "Colour 2",
+          "description": "Second colour (themes with 2 or more colours)."
+        },
+        "color3": {
+          "name": "Colour 3",
+          "description": "Third colour (themes with 3 or more colours)."
+        },
+        "color4": {
+          "name": "Colour 4",
+          "description": "Fourth colour (FIRE2, THEME3, PALETTE2 only)."
+        },
+        "color5": {
+          "name": "Colour 5",
+          "description": "Fifth colour (THEME3, PALETTE2 only)."
+        },
+        "color6": {
+          "name": "Colour 6",
+          "description": "Sixth colour (THEME3, PALETTE2 only)."
+        },
+        "speed": {
+          "name": "Speed",
+          "description": "Only for RAINBOW1/RAINBOW2 (animation speed instead of a colour)."
+        }
+      }
+    },
+    "set_pixel": {
+      "name": "Set pixel",
+      "description": "Set one addressable LED to a colour (PIXEL command). The strip has 172 LEDs, numbered 0 to 171.",
+      "fields": {
+        "index": {
+          "name": "LED index",
+          "description": "Which LED (0 to 171)."
+        },
+        "color": {
+          "name": "Colour",
+          "description": "The colour for this LED."
+        }
+      }
+    },
+    "set_backled": {
+      "name": "Set back-light section",
+      "description": "Set one of the two back-light sections to a colour (BACKLED command).",
+      "fields": {
+        "section": {
+          "name": "Section",
+          "description": "Which back-light section (1 or 2)."
+        },
+        "color": {
+          "name": "Colour",
+          "description": "The colour for this section."
+        }
+      }
+    },
+    "send_command": {
+      "name": "Send raw command",
+      "description": "Send a literal ASCII command to the lamp (Nordic UART).",
+      "fields": {
+        "command": {
+          "name": "Command",
+          "description": "The exact command, e.g. COLOR255000000 or THEME.RAINBOW1.20,"
+        }
+      }
+    }
   }
 }

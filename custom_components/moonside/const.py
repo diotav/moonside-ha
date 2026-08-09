@@ -17,6 +17,11 @@ IDLE_DISCONNECT_SECONDS = 30
 # can interrupt animation transitions", so consecutive commands are spaced out.
 MIN_WRITE_INTERVAL = 0.12
 
+# Individual-LED addressing (developer.moonside.design). The strip has 172
+# addressable LEDs, indexed 0-171, and two back-light sections (BACKLED1/2).
+PIXEL_MAX_INDEX = 171
+BACKLED_SECTIONS = (1, 2)
+
 # Quick presets shown in the light card's effect list. Name -> full command.
 # These use baked-in colours; use the moonside.set_theme service to pick your own.
 EFFECTS: dict[str, str] = {
