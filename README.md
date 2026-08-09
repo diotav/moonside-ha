@@ -141,9 +141,11 @@ data:
 - **Availability.** The entity follows Bluetooth presence: it goes `unavailable`
   when no proxy has seen the lamp's advertisements for a while (for example when the
   lamp is powered off or out of range), and returns as soon as it is seen again.
-- **Model-specific commands.** `PIXEL` and `BACKLED` are exposed via `set_pixel` and
-  `set_backled`, but only exist on models with an addressable strip / back LEDs; on
-  other models they are simply ignored.
+- **Addressable LEDs / back sections.** `PIXEL` (172 addressable LEDs, `0`–`171`)
+  and `BACKLED` (two back sections) are exposed via `set_pixel` and `set_backled`.
+  The docs describe this hardware but don't state which models have it, and the lamp
+  returns no error or acknowledgement, so behaviour on a model without an addressable
+  strip is unverified.
 
 ## Protocol
 
